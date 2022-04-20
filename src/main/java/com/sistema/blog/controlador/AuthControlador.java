@@ -6,6 +6,8 @@ import com.sistema.blog.entidades.Rol;
 import com.sistema.blog.entidades.Usuario;
 import com.sistema.blog.repositorio.RolRepositorio;
 import com.sistema.blog.repositorio.UsuarioRepositorio;
+import com.sistema.blog.seguridad.JWTAuthResponseDTO;
+import com.sistema.blog.seguridad.JwtTokenProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -37,21 +39,25 @@ public class AuthControlador {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    @Autowired
+    private JwtTokenProvider jwtTokenProvider;
+
     @PostMapping("/iniciarSesion")
-    public ResponseEntity<String> authenticateUser(@RequestBody LoginDTO loginDTO) {
+    public ResponseEntity<JWTAuthResponseDTO> authenticateUser(@RequestBody LoginDTO loginDTO) {
         Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(loginDTO.getUsernameOrEmail(), loginDTO.getPassword()));
         SecurityContextHolder.getContext().setAuthentication(authentication);
-        return new ResponseEntity<>("Ha iniciado sesión con éxito", HttpStatus.OK);
+        // Obtenemos el token de jwt token provider
+        return ResponseEntity.ok(new JWTAuthResponseDTO(jwtTokenProvider.generarToken(authentication)));
     }
 
 
     @PostMapping("/registrar")
-    public ResponseEntity<?> registrarUsuario(@RequestBody RegistroDTO registroDTO){
-        if (usuarioRepositorio.existsByUsername(registroDTO.getUsername())){
+    public ResponseEntity<?> registrarUsuario(@RequestBody RegistroDTO registroDTO) {
+        if (usuarioRepositorio.existsByUsername(registroDTO.getUsername())) {
             return new ResponseEntity<>("Ese nombre de usuario ya existe", HttpStatus.BAD_REQUEST);
         }
 
-        if (usuarioRepositorio.existsByEmail(registroDTO.getEmail())){
+        if (usuarioRepositorio.existsByEmail(registroDTO.getEmail())) {
             return new ResponseEntity<>("Ese email de usuario ya existe", HttpStatus.BAD_REQUEST);
         }
 
